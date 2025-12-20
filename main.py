@@ -2,12 +2,6 @@
 TÜBİTAK 2204-A Projesi
 "Telomeraz enzimi potansiyel riskleri ve optimal kullanım tavsiyesi"
 
-v7.3 - tr 
-YENİ: 
-- Telomeraz kullanımı mutasyon riskini ciddi şekilde artırır
-- Düzeltilmiş senesens: Telomeraz YOK -> Hayflick + Telomer limiti
-- Diğer stratejiler: Sadece Hayflick limiti (telomer uzayabilir)
-- Kanser hücreleri senesense GİRMEZ
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,14 +25,13 @@ KAYIP_VARYASYONU = 25
 TELOMERAZ_ETKINLIGI = 0.8
 TELOMERAZ_EKLEME = 60
 
-MUTASYON_ORANI = 0.002  # %0.2 - Çok düşük ama var
-KANSER_ESIGI = 6  # Literatüre uygun
+MUTASYON_ORANI = 0.002  
+KANSER_ESIGI = 6  
 MUTASYON_ARTISI_KISA = 2.0  # Kısa telomerde 2x
 KANSER_BUYUME_ORANI = 1.5
-KANSER_ESIGI_VARYASYON = 1  # ±1
+KANSER_ESIGI_VARYASYON = 1  
 
-# KRITIK: Telomeraz kullanımı mutasyon riskini ARTTIRIR
-TELOMERAZ_MUTASYON_CARPANI = 1.5  # Telomeraz ile mutasyon riski artar
+TELOMERAZ_MUTASYON_CARPANI = 1.5  
 
 HUCRE_SAYISI = 5000
 MAX_NESIL = 80
