@@ -1,5 +1,3 @@
-
-
 """
 TÜBİTAK 2204-A Projesi
 "Telomeraz Temelli Gençleştirme Stratejilerinde Yaşam Süresi ve Kanser Riski Dengesi: Ajan Tabanlı Bir Optimizasyon Modeli"
