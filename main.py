@@ -1,7 +1,8 @@
+
+
 """
 TÜBİTAK 2204-A Projesi
-"Telomeraz enzimi potansiyel riskleri ve optimal kullanım tavsiyesi"
-
+"Telomeraz Temelli Gençleştirme Stratejilerinde Yaşam Süresi ve Kanser Riski Dengesi: Ajan Tabanlı Bir Optimizasyon Modeli"
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,11 +26,12 @@ KAYIP_VARYASYONU = 25
 TELOMERAZ_ETKINLIGI = 0.8
 TELOMERAZ_EKLEME = 60
 
-MUTASYON_ORANI = 0.002  
-KANSER_ESIGI = 6  
-MUTASYON_ARTISI_KISA = 2.0  # Kısa telomerde 2x
+MUTASYON_ORANI = 0.05
+KANSER_ESIGI = 6 
+MUTASYON_ARTISI_KISA = 2.0  
 KANSER_BUYUME_ORANI = 1.5
 KANSER_ESIGI_VARYASYON = 1  
+
 
 TELOMERAZ_MUTASYON_CARPANI = 1.5  
 
@@ -66,8 +68,8 @@ def telomeraz_aktivitesi_al(nesil, strateji, **parametreler):
             return doz
         return 0.0
     elif strateji == "optimal":
-        if nesil % 18 < 4:
-            return 0.75
+        if nesil % 15 < 3:
+            return 0.70
         return 0.0
     return 0.0
 
@@ -83,7 +85,6 @@ def populasyon_baslat(hucre_sayisi):
         hucre_hayflick = max(30, HAYFLICK_LIMITI + np.random.randint(
             -HAYFLICK_LIMITI_VARYASYON, HAYFLICK_LIMITI_VARYASYON + 1
         ))
-        # Son eleman: senesans timer (0 = normal, >0 = remaining gens before death)
         populasyon.append((
             baslangic_telomer, 0, 0, False,
             hucre_kritik, hucre_kanser_esigi, hucre_hayflick, 0
@@ -103,7 +104,6 @@ def populasyon_simule_et_varyasyonlu(strateji_adi, nesil_sayisi=MAX_NESIL, **str
         telomeraz_aktif = telomeraz_aktivitesi_al(nesil, strateji_adi, **strateji_parametreleri)
         is_hic = (strateji_adi == 'hic')
         
-        # Sürekli strateji için kanser işaretlemesi
         if strateji_adi == 'surekli' and telomeraz_aktif > 0.9:
             populasyon = [
                 (tel, mut, bol, True, hc_kritik, hc_kans, hc_hf, 0)
@@ -117,7 +117,6 @@ def populasyon_simule_et_varyasyonlu(strateji_adi, nesil_sayisi=MAX_NESIL, **str
         for hucre_veri in populasyon:
             telomer, mutasyon, bolunme, kanser_mi, hucre_kritik, hucre_kanser_esigi, hucre_hayflick, senescent_timer = hucre_veri
 
-            # SENESENS MEKANİZMASI: Senesense giren hücreler bir sonraki nesilde ölür
             if senescent_timer > 0:
                 senesans_sayisi += 1
                 if senescent_timer > 1:
@@ -127,18 +126,13 @@ def populasyon_simule_et_varyasyonlu(strateji_adi, nesil_sayisi=MAX_NESIL, **str
                     ))
                 continue
 
-            # SENESENS TETİKLEYİCİLERİ:
             senesense_gir = False
             
-            # KANSER HÜCRELERİ SENESENSE GİRMEZ!
             if not kanser_mi:
                 if is_hic:
-                    # Telomeraz YOK: Hem telomer hem Hayflick limiti kontrol edilir
                     if telomer < hucre_kritik or bolunme >= hucre_hayflick:
                         senesense_gir = True
                 else:
-                    # Diğer stratejiler: Sadece telomer limiti (telomeraz telomeri uzatabilir)
-                    # Hayflick limiti diğer stratejilerde geçerli değil (telomeraz uzatabilir)
                     if telomer < hucre_kritik:
                         senesense_gir = True
             
@@ -150,7 +144,6 @@ def populasyon_simule_et_varyasyonlu(strateji_adi, nesil_sayisi=MAX_NESIL, **str
                 ))
                 continue
 
-            # KANSER HÜCRELERİ: Hızlı çoğalma, senesense girmez
             if kanser_mi:
                 yavru_sayisi = int(2 * KANSER_BUYUME_ORANI)
                 for _ in range(yavru_sayisi):
@@ -158,11 +151,9 @@ def populasyon_simule_et_varyasyonlu(strateji_adi, nesil_sayisi=MAX_NESIL, **str
                     kazanc = TELOMERAZ_EKLEME * telomeraz_aktif * TELOMERAZ_ETKINLIGI if telomeraz_aktif > 0 else 0
                     yeni_telomer = max(0, telomer - kayip + kazanc)
                     
-                    # Kanser hücrelerinde mutasyon
                     yeni_mutasyon = mutasyon
-                    mutasyon_olasiligi = MUTASYON_ORANI * 2.0  # Kanser hücrelerinde biraz daha yüksek
+                    mutasyon_olasiligi = MUTASYON_ORANI * 2.0  
                     
-                    # Telomeraz kullanımı mutasyonu artırır
                     if telomeraz_aktif > 0:
                         mutasyon_olasiligi *= (1 + telomeraz_aktif * TELOMERAZ_MUTASYON_CARPANI)
                     
@@ -176,27 +167,21 @@ def populasyon_simule_et_varyasyonlu(strateji_adi, nesil_sayisi=MAX_NESIL, **str
                     ))
                 continue
 
-            # NORMAL HÜCRE BÖLÜNMESI
             for _ in range(2):
                 kayip = max(0, np.random.normal(TELOMER_KAYBI, KAYIP_VARYASYONU))
                 kazanc = TELOMERAZ_EKLEME * telomeraz_aktif * TELOMERAZ_ETKINLIGI if telomeraz_aktif > 0 else 0
                 yeni_telomer = max(0, telomer - kayip + kazanc)
 
-                # MUTASYON HESAPLAMA - Düşük oran ama telomeraz ile artar
-                mutasyon_olasiligi = MUTASYON_ORANI  # %0.2
+                mutasyon_olasiligi = MUTASYON_ORANI
                 
-                # Kısa telomer mutasyon riskini artırır
                 if yeni_telomer < hucre_kritik * 1.5:
-                    mutasyon_olasiligi *= MUTASYON_ARTISI_KISA  # 2x
+                    mutasyon_olasiligi *= MUTASYON_ARTISI_KISA  
                 
-                # TELOMERAZ KULLANIMI MUTASYON RİSKİNİ ARTIRIR
                 if telomeraz_aktif > 0:
                     mutasyon_olasiligi *= (1 + telomeraz_aktif * TELOMERAZ_MUTASYON_CARPANI)
-                    # %0.2 → Tam telomeraz ile %0.5'e çıkar
                 
-                # 'hic' stratejisinde mutasyon olasılığını daha da azalt
                 if is_hic:
-                    mutasyon_olasiligi *= 0.1  # Neredeyse hiç kanser
+                    mutasyon_olasiligi *= 0.1  
 
                 yeni_mutasyon = mutasyon
                 if np.random.random() < mutasyon_olasiligi:
@@ -298,7 +283,7 @@ def telomeraz_zamanlamasi_optimize():
 
 # ===================== GÖRSELLEŞTİRME =====================
 def strateji_karsilastirmasi_goster(sonuclar_sozlugu):
-    sekil, eksenler = plt.subplots(2, 3, figsize=(18, 10))
+    sekil, eksenler = plt.subplots(3, 2, figsize=(18, 10))
     sekil.suptitle('Telomeraz Stratejileri Karşılaştırması', fontsize=16, fontweight='bold')
     
     renkler = {
@@ -314,8 +299,8 @@ def strateji_karsilastirmasi_goster(sonuclar_sozlugu):
         eksenler[0, 1].plot(veri['nesil'], veri['ort_telomer'], label=etiket, color=renk, linewidth=2.5, alpha=0.9)
         eksenler[1, 0].plot(veri['nesil'], veri['kanser_hucre'] / 1000, label=etiket, color=renk, linewidth=2.5, alpha=0.9)
         eksenler[1, 1].plot(veri['nesil'], veri['ort_mutasyon'], label=etiket, color=renk, linewidth=2.5, alpha=0.9)
-        eksenler[0, 2].plot(veri['nesil'], veri['senesans_hucre'] / 1000, label=etiket, color=renk, linewidth=2.5, alpha=0.9)
-        eksenler[1, 2].plot(veri['nesil'], veri['ort_bolunme'], label=etiket, color=renk, linewidth=2.5, alpha=0.9)
+        eksenler[2, 0].plot(veri['nesil'], veri['senesans_hucre'] / 1000, label=etiket, color=renk, linewidth=2.5, alpha=0.9)
+        eksenler[2, 1].plot(veri['nesil'], veri['ort_bolunme'], label=etiket, color=renk, linewidth=2.5, alpha=0.9)
     
     eksenler[0, 0].set_title('Canlı Hücre Sayısı', fontsize=12, fontweight='bold')
     eksenler[0, 0].set_xlabel('Nesil')
@@ -344,18 +329,18 @@ def strateji_karsilastirmasi_goster(sonuclar_sozlugu):
     eksenler[1, 1].legend(loc='best')
     eksenler[1, 1].grid(alpha=0.3)
     
-    eksenler[0, 2].set_title('O Nesilde Senesansa Giren Hücreler', fontsize=12, fontweight='bold')
-    eksenler[0, 2].set_xlabel('Nesil')
-    eksenler[0, 2].set_ylabel('Senesans Hücre (×1000)')
-    eksenler[0, 2].legend(loc='best')
-    eksenler[0, 2].grid(alpha=0.3)
+    eksenler[2, 0].set_title('O Nesilde Senesansa Giren Hücreler', fontsize=12, fontweight='bold')
+    eksenler[2, 0].set_xlabel('Nesil')
+    eksenler[2, 0].set_ylabel('Senesans Hücre (×1000)')
+    eksenler[2, 0].legend(loc='best')
+    eksenler[2, 0].grid(alpha=0.3)
     
-    eksenler[1, 2].set_title('Ortalama Bölünme Sayısı', fontsize=12, fontweight='bold')
-    eksenler[1, 2].set_xlabel('Nesil')
-    eksenler[1, 2].set_ylabel('Bölünme Sayısı')
-    eksenler[1, 2].axhline(HAYFLICK_LIMITI, color='red', linestyle='--', alpha=0.5, label='Hayflick Limiti')
-    eksenler[1, 2].legend(loc='best')
-    eksenler[1, 2].grid(alpha=0.3)
+    eksenler[2, 1].set_title('Ortalama Bölünme Sayısı', fontsize=12, fontweight='bold')
+    eksenler[2, 1].set_xlabel('Nesil')
+    eksenler[2, 1].set_ylabel('Bölünme Sayısı')
+    eksenler[2, 1].axhline(HAYFLICK_LIMITI, color='red', linestyle='--', alpha=0.5, label='Hayflick Limiti')
+    eksenler[2, 1].legend(loc='best')
+    eksenler[2, 1].grid(alpha=0.3)
     
     plt.tight_layout()
     return sekil
@@ -364,7 +349,7 @@ def strateji_karsilastirmasi_goster(sonuclar_sozlugu):
 def ana():
     st.set_page_config(page_title="Telomeraz Optimizasyonu", layout="wide")
     
-    st.title("🧬 Ölümsüzlük Bedeli: Telomeraz Optimizasyonu")
+    st.title("🧬 Telomeraz Grafikli Simülasyon ve Optimizasyon")
     st.markdown("### TÜBİTAK 2204-A Projesi")
     st.markdown("---")
     
@@ -385,7 +370,6 @@ def ana():
         
         🧪 **Kanser Modeli:**
         - **Kanser Eşiği: 6 mutasyon (±1)** ✅ Literatür
-        - **Mutasyon Oranı: 0.2% (düşük!)**
         - Kısa telomer: 2x artış
         - **⚠️ Telomeraz: 1.5x mutasyon artışı**
         - Mutasyon olur ama kanser zor gelişir
@@ -394,13 +378,7 @@ def ana():
         💊 **Telomeraz:**
         - Ekleme: 60 bp
         - Etkinlik: %80
-        - **Mutasyon riski: CİDDİ ARTIŞ**
-        
-        📊 **Senesens Kuralları:**
-        - **Telomeraz YOK**: Telomer<4500 VEYA Hayflick≥50
-        - **Diğer stratejiler**: Sadece Telomer<4500
-        - **Kanser**: Senesense GİRMEZ
-        
+
         📈 **Simülasyon:**
         - Başlangıç: 5,000 hücre
         - Maksimum: 50,000 hücre
@@ -543,3 +521,4 @@ def ana():
 
 if __name__ == "__main__":
     ana()
+
